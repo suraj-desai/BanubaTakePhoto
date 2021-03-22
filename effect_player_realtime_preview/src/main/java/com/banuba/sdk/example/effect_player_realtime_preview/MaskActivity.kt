@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.banuba.sdk.effect_player.Effect
 import com.banuba.sdk.manager.BanubaSdkManager
 import com.banuba.sdk.manager.BanubaSdkTouchListener
+import com.banuba.sdk.entity.ContentRatioParams
 import kotlinx.android.synthetic.main.activity_apply_mask.*
 import kotlinx.android.synthetic.main.activity_camera_preview.surfaceView
 
@@ -69,6 +70,8 @@ class MaskActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         banubaSdkManager.attachSurface(surfaceView)
+        var crp = ContentRatioParams(100, 100, true);
+        banubaSdkManager.takePhoto(crp)
 
         if (allPermissionsGranted()) {
             banubaSdkManager.openCamera()
