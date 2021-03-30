@@ -2,17 +2,23 @@ package com.banuba.sdk.example.effect_player_realtime_preview
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.banuba.sdk.effect_player.Effect
 import com.banuba.sdk.manager.BanubaSdkManager
 import com.banuba.sdk.manager.BanubaSdkTouchListener
+import com.banuba.sdk.entity.RecordedVideoInfo
 import com.banuba.sdk.entity.ContentRatioParams
 import kotlinx.android.synthetic.main.activity_apply_mask.*
 import kotlinx.android.synthetic.main.activity_camera_preview.surfaceView
+import com.banuba.sdk.manager.IEventCallback
+import com.banuba.sdk.types.Data
 
 
 /**
@@ -28,11 +34,45 @@ class MaskActivity : AppCompatActivity() {
 
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     }
-
+//    private val banubaSdkManager by lazy(LazyThreadSafetyMode.NONE) {
+//        BanubaSdkManager(applicationContext)
+//    }
     private val banubaSdkManager by lazy(LazyThreadSafetyMode.NONE) {
-        BanubaSdkManager(applicationContext)
+    Log.d("Icalled", "Ievent  called")
+        BanubaSdkManager(applicationContext).apply {
+            setCallback(banubaEventCallback)
+        }
     }
+    private val banubaEventCallback = object : IEventCallback {
 
+        override fun onVideoRecordingFinished(videoInfo: RecordedVideoInfo) {
+            Log.d("Hello", "Video recording finished. Recorded file = ${videoInfo.filePath}," +
+                    "duration = ${videoInfo.recordedLength}")
+        }
+        override fun onVideoRecordingStatusChange(isStarted: Boolean) {
+            Log.d("RecChanged", "Video recording status changed. isRecording")
+        }
+
+        override fun onCameraOpenError(e: Throwable) {
+            // Implement custom error handling here
+        }
+
+        override fun onImageProcessed(imageBitmpa: Bitmap) {}
+//
+        override fun onEditingModeFaceFound(faceFound: Boolean) {}
+
+        override fun onHQPhotoReady(photoBitmap: Bitmap) {}
+
+        override fun onEditedImageReady(imageBitmap: Bitmap) {}
+
+        override fun onFrameRendered(data: Data, width: Int, height: Int) {}
+
+        override fun onScreenshotReady(screenshotBitmap: Bitmap) {
+            Log.d("photo11","photo called")
+        }
+
+        override fun onCameraStatus(isOpen: Boolean) {}
+    }
     private val maskUri by lazy(LazyThreadSafetyMode.NONE) {
         Uri.parse(BanubaSdkManager.getResourcesBase())
                 .buildUpon()
@@ -51,6 +91,8 @@ class MaskActivity : AppCompatActivity() {
         // Set custom OnTouchListener to change mask style.
         surfaceView.setOnTouchListener(BanubaSdkTouchListener(this, banubaSdkManager.effectPlayer))
 
+//        var crp = ContentRatioParams(100,100,true);
+//        banubaSdkManager.takePhoto(crp);
 
         showMaskButton.setOnClickListener {
             shouldApply = !shouldApply
@@ -59,6 +101,11 @@ class MaskActivity : AppCompatActivity() {
 
             if (shouldApply) {
                 // The mask is loaded asynchronously and applied
+                Handler().postDelayed(Runnable {
+                    var crp = ContentRatioParams(100, 100, true);
+                    banubaSdkManager.takePhoto(crp)
+                    Log.d("takephoto", "takephoto  called")
+                }, 500)
                 effect = banubaSdkManager.effectManager.loadAsync(maskUri.toString())
             } else {
                 // The mask is unloaded
@@ -70,11 +117,11 @@ class MaskActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         banubaSdkManager.attachSurface(surfaceView)
-        var crp = ContentRatioParams(100, 100, true);
-        banubaSdkManager.takePhoto(crp)
 
         if (allPermissionsGranted()) {
             banubaSdkManager.openCamera()
+
+
         } else {
             requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CODE_APPLY_MASK_PERMISSION)
         }
